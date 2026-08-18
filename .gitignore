@@ -153,3 +153,9 @@ a.out.*
 
 AGENTS.local.md
 .pi/SYSTEM.md
+
+# fork-local docs (never commit)
+STATE.md
+CONTEXT.md
+SOP.md
+compile_commands.json
