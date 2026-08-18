@@ -312,35 +312,31 @@ struct common_sampler * common_sampler_init(
     // "thought control" features. It does not gate grammar_lazy's own need for this sampler,
     // which is an unrelated grammar/tool-calling concern (suppressing grammar constraints while
     // inside a thinking block), not part of the budget-forcing mechanism itself.
-    const bool reasoning_budget_active = params.reasoning_budget_enabled && (params.reasoning_budget_tokens >= 0 || params.reasoning_control);
-    if (!params.reasoning_budget_start.empty() && !params.reasoning_budget_end.empty() && (params.grammar_lazy || reasoning_budget_active)) {
+    const bool reasoning_budget_active =
+        params.reasoning_budget_enabled && (params.reasoning_budget_tokens >= 0 || params.reasoning_control);
+    if (!params.reasoning_budget_start.empty() && !params.reasoning_budget_end.empty() &&
+        (params.grammar_lazy || reasoning_budget_active)) {
         const int32_t budget_tokens = params.reasoning_budget_tokens < 0 ? INT_MAX : params.reasoning_budget_tokens;
 
         // soft warning points: up to two (e.g. light nudge at 0.5, stronger at
         // 0.75 of the budget); threshold is in remaining-token terms
         std::vector<common_reasoning_budget_soft_point> soft_points;
-        auto add_soft_point = [&](float ratio, const llama_tokens & tokens) {
+        auto                                            add_soft_point = [&](float ratio, const llama_tokens & tokens) {
             if (ratio > 0.0f && !tokens.empty() && budget_tokens != INT_MAX) {
                 const float r = std::min(ratio, 1.0f);
-                soft_points.push_back({std::max(0, budget_tokens - (int32_t) std::ceil(budget_tokens * r)), tokens});
+                soft_points.push_back({ std::max(0, budget_tokens - (int32_t) std::ceil(budget_tokens * r)), tokens });
             }
         };
-        add_soft_point(params.reasoning_budget_soft_ratio,  params.reasoning_budget_soft_forced);
+        add_soft_point(params.reasoning_budget_soft_ratio, params.reasoning_budget_soft_forced);
         add_soft_point(params.reasoning_budget_soft2_ratio, params.reasoning_budget_soft2_forced);
         // NOTE: intro "once" dedupe happens server-side (server-context.cpp),
         // where the full conversation prompt is available - the generation
         // prompt here is only the template's generation suffix.
         llama_tokens intro_tokens = params.reasoning_budget_intro_forced;
 
-        rbudget = common_reasoning_budget_init(
-            vocab,
-            {params.reasoning_budget_start},
-            params.reasoning_budget_end,
-            params.reasoning_budget_forced,
-            soft_points,
-            intro_tokens,
-            budget_tokens,
-            params.reasoning_budget_grace_tokens);
+        rbudget = common_reasoning_budget_init(vocab, { params.reasoning_budget_start }, params.reasoning_budget_end,
+                                               params.reasoning_budget_forced, soft_points, intro_tokens, budget_tokens,
+                                               params.reasoning_budget_grace_tokens);
 
         for (const auto & token : prefill_tokens) {
             llama_sampler_accept(rbudget, token);
@@ -353,8 +349,7 @@ struct common_sampler * common_sampler_init(
             // in would be misread as the model having already emitted the start
             // of the forced sequence, silently skipping ahead in it.
             const auto state = common_reasoning_budget_get_state(rbudget);
-            if (state == REASONING_BUDGET_INTRO_FORCING ||
-                state == REASONING_BUDGET_SOFT_FORCING ||
+            if (state == REASONING_BUDGET_INTRO_FORCING || state == REASONING_BUDGET_SOFT_FORCING ||
                 state == REASONING_BUDGET_FORCING) {
                 break;
             }

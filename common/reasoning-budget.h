@@ -8,21 +8,21 @@
 #include <vector>
 
 enum common_reasoning_budget_state {
-    REASONING_BUDGET_IDLE,          // waiting for start sequence
-    REASONING_BUDGET_INTRO_FORCING, // forcing the intro/announcement message
-    REASONING_BUDGET_COUNTING,      // counting down tokens
-    REASONING_BUDGET_SOFT_PENDING,  // soft threshold crossed, waiting for a newline boundary
-    REASONING_BUDGET_SOFT_FORCING,  // forcing the soft warning message
-    REASONING_BUDGET_HARD_PENDING,  // budget exhausted, waiting (bounded) for a paragraph boundary
-    REASONING_BUDGET_FORCING,       // forcing budget message + end sequence
-    REASONING_BUDGET_WAITING_UTF8,  // budget exhausted, waiting for UTF-8 completion
-    REASONING_BUDGET_DONE,          // passthrough forever
+    REASONING_BUDGET_IDLE,           // waiting for start sequence
+    REASONING_BUDGET_INTRO_FORCING,  // forcing the intro/announcement message
+    REASONING_BUDGET_COUNTING,       // counting down tokens
+    REASONING_BUDGET_SOFT_PENDING,   // soft threshold crossed, waiting for a newline boundary
+    REASONING_BUDGET_SOFT_FORCING,   // forcing the soft warning message
+    REASONING_BUDGET_HARD_PENDING,   // budget exhausted, waiting (bounded) for a paragraph boundary
+    REASONING_BUDGET_FORCING,        // forcing budget message + end sequence
+    REASONING_BUDGET_WAITING_UTF8,   // budget exhausted, waiting for UTF-8 completion
+    REASONING_BUDGET_DONE,           // passthrough forever
 };
 
 // One soft warning point.
 struct common_reasoning_budget_soft_point {
-    int32_t     threshold;  // fire when remaining <= threshold
-    llama_tokens tokens;    // message forced at this point (empty = disabled)
+    int32_t      threshold;  // fire when remaining <= threshold
+    llama_tokens tokens;     // message forced at this point (empty = disabled)
 };
 
 // Creates a reasoning budget sampler that limits token generation inside a
@@ -70,15 +70,15 @@ struct common_reasoning_budget_soft_point {
 //   initial_state       - initial state
 
 struct llama_sampler * common_reasoning_budget_init(
-        const struct llama_vocab        * vocab,
-        const std::vector<llama_tokens> & start_seqs,
-        const std::vector<llama_tokens> & end_seqs,
-        const llama_tokens              & forced_tokens,
-        const std::vector<common_reasoning_budget_soft_point> & soft_points,
-        const llama_tokens              & intro_forced_tokens,
-        int32_t                           budget,
-        int32_t                            grace_tokens = 0,
-        common_reasoning_budget_state     initial_state = REASONING_BUDGET_IDLE);
+    const struct llama_vocab *                              vocab,
+    const std::vector<llama_tokens> &                       start_seqs,
+    const std::vector<llama_tokens> &                       end_seqs,
+    const llama_tokens &                                    forced_tokens,
+    const std::vector<common_reasoning_budget_soft_point> & soft_points,
+    const llama_tokens &                                    intro_forced_tokens,
+    int32_t                                                 budget,
+    int32_t                                                 grace_tokens  = 0,
+    common_reasoning_budget_state                           initial_state = REASONING_BUDGET_IDLE);
 
 common_reasoning_budget_state common_reasoning_budget_get_state(const struct llama_sampler * smpl);
 

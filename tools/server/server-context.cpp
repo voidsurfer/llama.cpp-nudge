@@ -1424,28 +1424,26 @@ private:
             // IMPORTANT: chat_params is reused across sleeping / resuming states,
             //            never store llama_context/llama_model pointers in chat_params,
             //            as they may be invalidated after sleeping
-            chat_params = {
-                /* use_jinja             */ params_base.use_jinja,
-                /* prefill_assistant     */ params_base.prefill_assistant,
-                /* reasoning_format      */ params_base.reasoning_format,
-                /* chat_template_kwargs  */ params_base.default_template_kwargs,
-                /* tmpls                 */ std::move(chat_templates),
-                /* allow_image           */ mctx ? mtmd_support_vision(mctx) : false,
-                /* allow_audio           */ mctx ? mtmd_support_audio (mctx) : false,
-                /* allow_video           */ mctx ? mtmd_helper_support_video(mctx) : false,
-                /* enable_thinking       */ enable_thinking,
-                /* reasoning_budget      */ params_base.sampling.reasoning_budget_tokens,
-                /* reasoning_budget_msg  */ params_base.sampling.reasoning_budget_message,
-                /* reasoning_budget_soft_ratio */ params_base.sampling.reasoning_budget_soft_ratio,
-                /* reasoning_budget_soft_msg   */ params_base.sampling.reasoning_budget_soft_message,
-                /* reasoning_budget_soft2_ratio */ params_base.sampling.reasoning_budget_soft2_ratio,
-                /* reasoning_budget_soft2_msg  */ params_base.sampling.reasoning_budget_soft2_message,
-                /* reasoning_budget_intro_msg  */ params_base.sampling.reasoning_budget_intro_message,
-                /* reasoning_budget_intro_mode */ params_base.sampling.reasoning_budget_intro_mode,
-                /* reasoning_budget_grace_toks */ params_base.sampling.reasoning_budget_grace_tokens,
-                /* media_path            */ params_base.media_path,
-                /* force_pure_content    */ params_base.force_pure_content_parser
-            };
+            chat_params = { /* use_jinja             */ params_base.use_jinja,
+                            /* prefill_assistant     */ params_base.prefill_assistant,
+                            /* reasoning_format      */ params_base.reasoning_format,
+                            /* chat_template_kwargs  */ params_base.default_template_kwargs,
+                            /* tmpls                 */ std::move(chat_templates),
+                            /* allow_image           */ mctx ? mtmd_support_vision(mctx) : false,
+                            /* allow_audio           */ mctx ? mtmd_support_audio(mctx) : false,
+                            /* allow_video           */ mctx ? mtmd_helper_support_video(mctx) : false,
+                            /* enable_thinking       */ enable_thinking,
+                            /* reasoning_budget      */ params_base.sampling.reasoning_budget_tokens,
+                            /* reasoning_budget_msg  */ params_base.sampling.reasoning_budget_message,
+                            /* reasoning_budget_soft_ratio */ params_base.sampling.reasoning_budget_soft_ratio,
+                            /* reasoning_budget_soft_msg   */ params_base.sampling.reasoning_budget_soft_message,
+                            /* reasoning_budget_soft2_ratio */ params_base.sampling.reasoning_budget_soft2_ratio,
+                            /* reasoning_budget_soft2_msg  */ params_base.sampling.reasoning_budget_soft2_message,
+                            /* reasoning_budget_intro_msg  */ params_base.sampling.reasoning_budget_intro_message,
+                            /* reasoning_budget_intro_mode */ params_base.sampling.reasoning_budget_intro_mode,
+                            /* reasoning_budget_grace_toks */ params_base.sampling.reasoning_budget_grace_tokens,
+                            /* media_path            */ params_base.media_path,
+                            /* force_pure_content    */ params_base.force_pure_content_parser };
 
             {
                 auto caps = common_chat_templates_get_caps(chat_params.tmpls.get());
@@ -1732,10 +1730,10 @@ private:
         // exact token sequences: the same text re-tokenized at a different
         // position can split into different BPE boundaries.
         if (task.params.sampling.reasoning_budget_intro_mode == "once" &&
-                !task.params.sampling.reasoning_budget_intro_forced.empty() &&
-                task.tokens.size() >= task.params.sampling.reasoning_budget_intro_forced.size()) {
+            !task.params.sampling.reasoning_budget_intro_forced.empty() &&
+            task.tokens.size() >= task.params.sampling.reasoning_budget_intro_forced.size()) {
             const auto * vocab_dedupe = llama_model_get_vocab(model_tgt);
-            auto detok = [&](const auto & toks) {
+            auto         detok        = [&](const auto & toks) {
                 std::string text;
                 for (size_t i = 0; i < toks.size(); i++) {
                     text += common_token_to_piece(vocab_dedupe, toks[i], false);
@@ -2076,7 +2074,7 @@ private:
 
         res->truncated             = slot.truncated;
         res->n_decoded             = slot.stats.n_gen;
-        res->vocab_usage           = llama_model_get_vocab(model_tgt); // for usage.reasoning token counting
+        res->vocab_usage           = llama_model_get_vocab(model_tgt);  // for usage.reasoning token counting
         res->n_prompt_tokens       = slot.task->n_tokens();
         res->n_prompt_tokens_cache = slot.stats.n_prompt_cached;
         res->n_tokens_cached       = slot.prompt.n_tokens();

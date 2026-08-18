@@ -3666,12 +3666,29 @@ common_params_context common_params_parser_init(common_params & params, llama_ex
         for (size_t i = 0; i < s.size(); i++) {
             if (s[i] == '\\' && i + 1 < s.size()) {
                 switch (s[i + 1]) {
-                    case 'n':  r += '\n'; i++; break;
-                    case 't':  r += '\t'; i++; break;
-                    case 'r':  r += '\r'; i++; break;
-                    case '\\': r += '\\'; i++; break;
-                    case '"':  r += '"';  i++; break;
-                    default:   r += s[i];      break;
+                    case 'n':
+                        r += '\n';
+                        i++;
+                        break;
+                    case 't':
+                        r += '\t';
+                        i++;
+                        break;
+                    case 'r':
+                        r += '\r';
+                        i++;
+                        break;
+                    case '\\':
+                        r += '\\';
+                        i++;
+                        break;
+                    case '"':
+                        r += '"';
+                        i++;
+                        break;
+                    default:
+                        r += s[i];
+                        break;
                 }
             } else {
                 r += s[i];
@@ -3680,14 +3697,13 @@ common_params_context common_params_parser_init(common_params & params, llama_ex
         return r;
     };
 
-    add_opt(common_arg(
-        {"--reasoning-budget-enable"},
-        {"--no-reasoning-budget-enable"},
-        "master switch for the reasoning budget mechanism (hard cutoff, soft warning, intro message, grace period, and the runtime reasoning-control endpoint); if disabled, none of the other --reasoning-budget-* settings take effect regardless of their values (default: disabled)",
-        [](common_params & params, bool value) {
-            params.sampling.reasoning_budget_enabled = value;
-        }
-    ).set_examples({LLAMA_EXAMPLE_SERVER, LLAMA_EXAMPLE_COMPLETION, LLAMA_EXAMPLE_CLI}).set_env("LLAMA_ARG_THINK_BUDGET_ENABLE"));
+    add_opt(common_arg({ "--reasoning-budget-enable" }, { "--no-reasoning-budget-enable" },
+                       "master switch for the reasoning budget mechanism (hard cutoff, soft warning, intro message, "
+                       "grace period, and the runtime reasoning-control endpoint); if disabled, none of the other "
+                       "--reasoning-budget-* settings take effect regardless of their values (default: disabled)",
+                       [](common_params & params, bool value) { params.sampling.reasoning_budget_enabled = value; })
+                .set_examples({ LLAMA_EXAMPLE_SERVER, LLAMA_EXAMPLE_COMPLETION, LLAMA_EXAMPLE_CLI })
+                .set_env("LLAMA_ARG_THINK_BUDGET_ENABLE"));
     add_opt(common_arg(
         {"--reasoning-budget"}, "N",
         "token budget for thinking: -1 for unrestricted, 0 for immediate end, N>0 for token budget (default: -1)",
@@ -3696,63 +3712,74 @@ common_params_context common_params_parser_init(common_params & params, llama_ex
             params.sampling.reasoning_budget_tokens = value;
         }
     ).set_examples({LLAMA_EXAMPLE_SERVER, LLAMA_EXAMPLE_COMPLETION, LLAMA_EXAMPLE_CLI}).set_env("LLAMA_ARG_THINK_BUDGET"));
-    add_opt(common_arg(
-        {"--reasoning-budget-message"}, "MESSAGE",
-        "message forced when the reasoning budget is exhausted; should include the model's own closing tag (e.g. </think>) as it is not appended automatically, since the exact tag can differ between models/templates. If empty, falls back to forcing just the auto-detected closing tag alone so the block still always closes (default: none)",
-        [](common_params & params, const std::string & value) {
-            params.sampling.reasoning_budget_message = unescape(value);
-        }
-    ).set_examples({LLAMA_EXAMPLE_SERVER, LLAMA_EXAMPLE_COMPLETION, LLAMA_EXAMPLE_CLI}).set_env("LLAMA_ARG_THINK_BUDGET_MESSAGE"));
-    add_opt(common_arg(
-        {"--reasoning-budget-soft-ratio"}, "N",
-        "fraction of the reasoning budget consumed at which to inject a soft warning message before the hard cutoff: <= 0 disables, (0,1] enables (default: -1)",
-        [](common_params & params, const std::string & value) {
-            params.sampling.reasoning_budget_soft_ratio = std::stof(value);
-        }
-    ).set_examples({LLAMA_EXAMPLE_SERVER, LLAMA_EXAMPLE_COMPLETION, LLAMA_EXAMPLE_CLI}).set_env("LLAMA_ARG_THINK_BUDGET_SOFT_RATIO"));
-    add_opt(common_arg(
-        {"--reasoning-budget-soft-message"}, "MESSAGE",
-        "message injected at the soft reasoning budget threshold, before the hard cutoff (default: none)",
-        [](common_params & params, const std::string & value) {
-            params.sampling.reasoning_budget_soft_message = unescape(value);
-        }
-    ).set_examples({LLAMA_EXAMPLE_SERVER, LLAMA_EXAMPLE_COMPLETION, LLAMA_EXAMPLE_CLI}).set_env("LLAMA_ARG_THINK_BUDGET_SOFT_MESSAGE"));
-    add_opt(common_arg(
-        {"--reasoning-budget-soft2-ratio"}, "N",
-        "fraction of the reasoning budget consumed at which to inject the SECOND soft warning message (e.g. 0.5 for the first, 0.75 for the second): <= 0 disables, (0,1] enables (default: -1)",
-        [](common_params & params, const std::string & value) {
-            params.sampling.reasoning_budget_soft2_ratio = std::stof(value);
-        }
-    ).set_examples({LLAMA_EXAMPLE_SERVER, LLAMA_EXAMPLE_COMPLETION, LLAMA_EXAMPLE_CLI}).set_env("LLAMA_ARG_THINK_BUDGET_SOFT2_RATIO"));
-    add_opt(common_arg(
-        {"--reasoning-budget-soft2-message"}, "MESSAGE",
-        "message injected at the second soft reasoning budget threshold, before the hard cutoff (default: none)",
-        [](common_params & params, const std::string & value) {
-            params.sampling.reasoning_budget_soft2_message = unescape(value);
-        }
-    ).set_examples({LLAMA_EXAMPLE_SERVER, LLAMA_EXAMPLE_COMPLETION, LLAMA_EXAMPLE_CLI}).set_env("LLAMA_ARG_THINK_BUDGET_SOFT2_MESSAGE"));
-    add_opt(common_arg(
-        {"--reasoning-budget-intro-mode"}, "MODE",
-        "when to force the intro message: 'every' = every reasoning block, 'once' = only the first reasoning block of a conversation (deduped by scanning the prompt for a previous intro). Anything other than 'once' behaves as 'every' (default: every)",
-        [](common_params & params, const std::string & value) {
-            params.sampling.reasoning_budget_intro_mode = value;
-        }
-    ).set_examples({LLAMA_EXAMPLE_SERVER, LLAMA_EXAMPLE_COMPLETION, LLAMA_EXAMPLE_CLI}).set_env("LLAMA_ARG_THINK_BUDGET_INTRO_MODE"));
-    add_opt(common_arg(
-        {"--reasoning-budget-intro-message"}, "MESSAGE",
-        string_format("message forced immediately when the reasoning block starts, announcing the token budget; use {budget} as a placeholder for the configured reasoning budget (default: '%s')",
-            params.sampling.reasoning_budget_intro_message.c_str()),
-        [](common_params & params, const std::string & value) {
-            params.sampling.reasoning_budget_intro_message = unescape(value);
-        }
-    ).set_examples({LLAMA_EXAMPLE_SERVER, LLAMA_EXAMPLE_COMPLETION, LLAMA_EXAMPLE_CLI}).set_env("LLAMA_ARG_THINK_BUDGET_INTRO_MESSAGE"));
-    add_opt(common_arg(
-        {"--reasoning-budget-grace-tokens"}, "N",
-        "once the reasoning budget is exhausted, wait up to N tokens for a paragraph break before forcing the cutoff, instead of forcing immediately (default: 0, disabled)",
-        [](common_params & params, int value) {
-            params.sampling.reasoning_budget_grace_tokens = value;
-        }
-    ).set_examples({LLAMA_EXAMPLE_SERVER, LLAMA_EXAMPLE_COMPLETION, LLAMA_EXAMPLE_CLI}).set_env("LLAMA_ARG_THINK_BUDGET_GRACE_TOKENS"));
+    add_opt(common_arg({ "--reasoning-budget-message" }, "MESSAGE",
+                       "message forced when the reasoning budget is exhausted; should include the model's own closing "
+                       "tag (e.g. </think>) as it is not appended automatically, since the exact tag can differ "
+                       "between models/templates. If empty, falls back to forcing just the auto-detected closing tag "
+                       "alone so the block still always closes (default: none)",
+                       [](common_params & params, const std::string & value) {
+                           params.sampling.reasoning_budget_message = unescape(value);
+                       })
+                .set_examples({ LLAMA_EXAMPLE_SERVER, LLAMA_EXAMPLE_COMPLETION, LLAMA_EXAMPLE_CLI })
+                .set_env("LLAMA_ARG_THINK_BUDGET_MESSAGE"));
+    add_opt(common_arg({ "--reasoning-budget-soft-ratio" }, "N",
+                       "fraction of the reasoning budget consumed at which to inject a soft warning message before the "
+                       "hard cutoff: <= 0 disables, (0,1] enables (default: -1)",
+                       [](common_params & params, const std::string & value) {
+                           params.sampling.reasoning_budget_soft_ratio = std::stof(value);
+                       })
+                .set_examples({ LLAMA_EXAMPLE_SERVER, LLAMA_EXAMPLE_COMPLETION, LLAMA_EXAMPLE_CLI })
+                .set_env("LLAMA_ARG_THINK_BUDGET_SOFT_RATIO"));
+    add_opt(
+        common_arg({ "--reasoning-budget-soft-message" }, "MESSAGE",
+                   "message injected at the soft reasoning budget threshold, before the hard cutoff (default: none)",
+                   [](common_params & params, const std::string & value) {
+                       params.sampling.reasoning_budget_soft_message = unescape(value);
+                   })
+            .set_examples({ LLAMA_EXAMPLE_SERVER, LLAMA_EXAMPLE_COMPLETION, LLAMA_EXAMPLE_CLI })
+            .set_env("LLAMA_ARG_THINK_BUDGET_SOFT_MESSAGE"));
+    add_opt(common_arg({ "--reasoning-budget-soft2-ratio" }, "N",
+                       "fraction of the reasoning budget consumed at which to inject the SECOND soft warning message "
+                       "(e.g. 0.5 for the first, 0.75 for the second): <= 0 disables, (0,1] enables (default: -1)",
+                       [](common_params & params, const std::string & value) {
+                           params.sampling.reasoning_budget_soft2_ratio = std::stof(value);
+                       })
+                .set_examples({ LLAMA_EXAMPLE_SERVER, LLAMA_EXAMPLE_COMPLETION, LLAMA_EXAMPLE_CLI })
+                .set_env("LLAMA_ARG_THINK_BUDGET_SOFT2_RATIO"));
+    add_opt(
+        common_arg(
+            { "--reasoning-budget-soft2-message" }, "MESSAGE",
+            "message injected at the second soft reasoning budget threshold, before the hard cutoff (default: none)",
+            [](common_params & params, const std::string & value) {
+                params.sampling.reasoning_budget_soft2_message = unescape(value);
+            })
+            .set_examples({ LLAMA_EXAMPLE_SERVER, LLAMA_EXAMPLE_COMPLETION, LLAMA_EXAMPLE_CLI })
+            .set_env("LLAMA_ARG_THINK_BUDGET_SOFT2_MESSAGE"));
+    add_opt(common_arg({ "--reasoning-budget-intro-mode" }, "MODE",
+                       "when to force the intro message: 'every' = every reasoning block, 'once' = only the first "
+                       "reasoning block of a conversation (deduped by scanning the prompt for a previous intro). "
+                       "Anything other than 'once' behaves as 'every' (default: every)",
+                       [](common_params & params, const std::string & value) {
+                           params.sampling.reasoning_budget_intro_mode = value;
+                       })
+                .set_examples({ LLAMA_EXAMPLE_SERVER, LLAMA_EXAMPLE_COMPLETION, LLAMA_EXAMPLE_CLI })
+                .set_env("LLAMA_ARG_THINK_BUDGET_INTRO_MODE"));
+    add_opt(common_arg({ "--reasoning-budget-intro-message" }, "MESSAGE",
+                       string_format(
+                           "message forced immediately when the reasoning block starts, announcing the token budget; "
+                           "use {budget} as a placeholder for the configured reasoning budget (default: '%s')",
+                           params.sampling.reasoning_budget_intro_message.c_str()),
+                       [](common_params & params, const std::string & value) {
+                           params.sampling.reasoning_budget_intro_message = unescape(value);
+                       })
+                .set_examples({ LLAMA_EXAMPLE_SERVER, LLAMA_EXAMPLE_COMPLETION, LLAMA_EXAMPLE_CLI })
+                .set_env("LLAMA_ARG_THINK_BUDGET_INTRO_MESSAGE"));
+    add_opt(common_arg({ "--reasoning-budget-grace-tokens" }, "N",
+                       "once the reasoning budget is exhausted, wait up to N tokens for a paragraph break before "
+                       "forcing the cutoff, instead of forcing immediately (default: 0, disabled)",
+                       [](common_params & params, int value) { params.sampling.reasoning_budget_grace_tokens = value; })
+                .set_examples({ LLAMA_EXAMPLE_SERVER, LLAMA_EXAMPLE_COMPLETION, LLAMA_EXAMPLE_CLI })
+                .set_env("LLAMA_ARG_THINK_BUDGET_GRACE_TOKENS"));
     add_opt(common_arg(
         {"--reasoning-preserve"},
         {"--no-reasoning-preserve"},

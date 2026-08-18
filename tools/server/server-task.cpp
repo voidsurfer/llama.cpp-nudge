@@ -374,13 +374,13 @@ int32_t server_task_result_cmpl_final::count_reasoning_tokens() {
 
 json server_task_result_cmpl_final::usage_json_oaicompat() {
     const int32_t n_reasoning = count_reasoning_tokens();
-    return json {
-        {"completion_tokens", n_decoded},
-        {"prompt_tokens",     n_prompt_tokens},
-        {"total_tokens",      n_decoded + n_prompt_tokens},
-        {"prompt_tokens_details", json { {"cached_tokens", n_prompt_tokens_cache} }},
-        {"completion_tokens_details", json { {"reasoning_tokens", n_reasoning} }},
-        {"reasoning",         n_reasoning},
+    return json{
+        { "completion_tokens",         n_decoded                                          },
+        { "prompt_tokens",             n_prompt_tokens                                    },
+        { "total_tokens",              n_decoded + n_prompt_tokens                        },
+        { "prompt_tokens_details",     json{ { "cached_tokens", n_prompt_tokens_cache } } },
+        { "completion_tokens_details", json{ { "reasoning_tokens", n_reasoning } }        },
+        { "reasoning",                 n_reasoning                                        },
     };
 }
 
@@ -590,22 +590,23 @@ json server_task_result_cmpl_final::to_json_oaicompat_resp() {
     }
 
     std::time_t t = std::time(0);
-    json res = {
-        {"completed_at", t},
-        {"created_at",   t},
-        {"id",           oai_resp_id},
-        {"model",        oaicompat_model},
-        {"object",       "response"},
-        {"output",       output},
-        {"status",       "completed"},
-        {"usage",        json {
-            {"input_tokens",  n_prompt_tokens},
-            {"output_tokens", n_decoded},
-            {"total_tokens",  n_decoded + n_prompt_tokens},
-            {"input_tokens_details", json { {"cached_tokens", n_prompt_tokens_cache} }},
-            {"output_tokens_details", json { {"reasoning_tokens", count_reasoning_tokens()} }},
-            {"reasoning",             count_reasoning_tokens()},
-        }},
+    json        res = {
+        { "completed_at", t               },
+        { "created_at",   t               },
+        { "id",           oai_resp_id     },
+        { "model",        oaicompat_model },
+        { "object",       "response"      },
+        { "output",       output          },
+        { "status",       "completed"     },
+        { "usage",
+         json{
+              { "input_tokens", n_prompt_tokens },
+              { "output_tokens", n_decoded },
+              { "total_tokens", n_decoded + n_prompt_tokens },
+              { "input_tokens_details", json{ { "cached_tokens", n_prompt_tokens_cache } } },
+              { "output_tokens_details", json{ { "reasoning_tokens", count_reasoning_tokens() } } },
+              { "reasoning", count_reasoning_tokens() },
+          }                               },
     };
 
     return res;
