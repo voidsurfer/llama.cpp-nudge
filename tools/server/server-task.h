@@ -317,9 +317,15 @@ struct completion_token_output {
 
 };
 
+
 struct server_task_result_cmpl_final : server_task_result {
     std::string content;
     llama_tokens tokens;
+
+    // reasoning-token telemetry: vocab captured at launch (no ownership) lets
+    // usage serialization count the final reasoning_content exactly
+    const struct llama_vocab * vocab_usage = nullptr;
+    int32_t n_reasoning_tokens = 0;
 
     bool stream;
     bool include_usage;
@@ -374,6 +380,8 @@ struct server_task_result_cmpl_final : server_task_result {
     json to_json_non_oaicompat();
 
     json usage_json_oaicompat();
+
+    int32_t count_reasoning_tokens();
 
     json to_json_oaicompat();
 
