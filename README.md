@@ -64,6 +64,36 @@ a wide range of hardware - locally and in the cloud.
 
 The `llama.cpp` project is build on top of the [ggml](https://github.com/ggml-org/ggml) library.
 
+## Fork notes
+
+This fork combines Nathanw1014's current Strix Halo Vulkan work with the
+reasoning-budget changes from the nudge fork. It is experimental and is not
+the upstream `ggml-org/llama.cpp` tree.
+
+The fork-specific changes include:
+
+- Reasoning-budget controls for the common library and `llama-server`,
+  including a master switch, multiple soft warning points, intro-once mode,
+  grace tokens, and `usage.reasoning` telemetry.
+- Explicit HTTP handling for the `reasoning_budget_enabled` master switch,
+  including distinct true, false, and omitted request values.
+- A multimodal safety fix that keeps `LLAMA_TOKEN_NULL` placeholders out of
+  intro-once detokenization.
+- Nathan's newer Vulkan and DeepSeek V4 sparse-prefill changes retained during
+  the rebase.
+
+Validation on 2026-08-20:
+
+- Vulkan build completed successfully.
+- `test-reasoning-budget` passed all 23 tests and UTF-8 checks.
+- `test-chat` passed, including the HTTP master-switch regression cases.
+- Ornith vision and Qwen3.8 Q6 vision smoke tests returned HTTP 200.
+- Qwen3.8 Q6 at 262K context passed 3/3 needle retrieval checks.
+- Pi-bench `shift-calendar` passed with an automated grade of 91/100.
+
+The Qwen3.8 Q6 validation server used a 262144-token context, Vulkan flash
+attention, q8 KV cache, and MTP draft depth 3.
+
 ## Supported backends
 
 | Backend | Target devices |
