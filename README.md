@@ -1,155 +1,66 @@
-# llama.cpp
+# llama.cpp nudge fork (Strix Halo + reasoning budget steering)
 
-![llama](https://raw.githubusercontent.com/ggml-org/llama.brand/refs/heads/master/cover/llama-cpp/cover-llama-cpp-dark.svg)
+A llama.cpp fork for AMD Strix Halo (gfx1151) that adds mid-thinking budget steering for hybrid-reasoning models in the Qwen3.5/3.6/3.8 lineage. Instead of only applying a hard cutoff when the thinking budget expires, the server can inject first-person nudge messages into the model's reasoning stream at budget fractions and clean paragraph boundaries so the model can converge on its own.
 
-<div align="center">
+Built on top of:
 
-<b>LLM inference in C/C++</b>
+- [Nathanw1014/llama.cpp `strix-halo-vulkan`](https://github.com/Nathanw1014/llama.cpp/tree/strix-halo-vulkan), including the current Vulkan and DeepSeek V4 sparse-prefill work
+- [ggml-org/llama.cpp PR #25961](https://github.com/ggml-org/llama.cpp/pull/25961) by laurencehardman, which introduced the reasoning-budget soft-warning mechanism this fork ports and extends
+- Upstream [ggml-org/llama.cpp](https://github.com/ggml-org/llama.cpp) master
 
-[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](https://opensource.org/licenses/MIT)
-[![Release](https://img.shields.io/github/v/release/ggml-org/llama.cpp)](https://github.com/ggml-org/llama.cpp/releases)
-[![Server](https://github.com/ggml-org/llama.cpp/actions/workflows/server.yml/badge.svg)](https://github.com/ggml-org/llama.cpp/actions/workflows/server.yml)
-[![Docker](https://github.com/ggml-org/llama.cpp/actions/workflows/docker.yml/badge.svg)](https://github.com/ggml-org/llama.cpp/actions/workflows/docker.yml)
-[![Winget](https://github.com/ggml-org/llama.cpp/actions/workflows/winget.yml/badge.svg)](https://github.com/ggml-org/llama.cpp/actions/workflows/winget.yml)
+## What this fork adds
 
-[manifesto](https://github.com/ggml-org/llama.cpp/discussions/205) / [ggml](https://github.com/ggml-org/ggml) / [ops](https://github.com/ggml-org/llama.cpp/blob/master/docs/ops.md) / [maintainer PRs](https://github.com/ggml-org/llama.cpp/issues?q=is%3Apr%20is%3Aopen%20draft%3AFalse%20(author%3Argerganov%20OR%20author%3AKitaitiMakoto%20OR%20author%3Adanbev%20OR%20author%3Aaldehir%20OR%20author%3Amax-krasnyansky%20OR%20author%3ACISC%20OR%20author%3Aggerganov%20OR%20author%3Aam17an%20OR%20author%3Abartowski1182%20OR%20author%3Ahipudding%20OR%20author%3AServeurpersoCom%20OR%20author%3Apwilkin%20OR%20author%3Areeselevine%20OR%20author%3Angxson%20OR%20author%3Ajeffbolznv%20OR%20author%3A0cc4m%20OR%20author%3Aangt%20OR%20author%3AIMbackK%20OR%20author%3Aarthw%20OR%20author%3AJohannesGaessler%20OR%20author%3AORippler%20OR%20author%3Aruixiang63%20OR%20author%3Axctan%20OR%20author%3Aallozaur%20OR%20author%3Ayomaytk%20OR%20author%3Aaendk%20OR%20author%3Agaugarg-nv%20OR%20author%3Ataronaeo%20OR%20author%3Aforforever73%20OR%20author%3Alhez%20OR%20author%3Anetrunnereve%20OR%20author%3Afairydreaming)%20sort%3Aupdated-desc) / [compile times](https://github.com/ggml-org/llama.cpp-dev/blob/master/README-compile-times.md) / [lib llama API](https://github.com/ggml-org/llama.cpp/issues/9289) / [llama-server REST API](https://github.com/ggml-org/llama.cpp/issues/9291)
+### Reasoning-budget controls
 
-</div>
-
-## Quick start
-
-A few options to get `llama.cpp` installed on your machine:
-
-- Visit https://llama.app and follow the instructions
-- Run with Docker - see our [Docker documentation](docs/docker.md)
-- Download pre-built binaries from the [releases page](https://github.com/ggml-org/llama.cpp/releases)
-- Build from source by cloning this repository - check out [our build guide](docs/build.md)
-
-Once installed:
+The server supports a master switch, a hard reasoning cutoff, up to two soft warning points, an optional intro message, an intro-once mode, and a grace window for reaching a paragraph boundary.
 
 ```sh
-# Download and run a model directly from Hugging Face
-llama cli -hf ggml-org/Qwen3.5-0.8B-GGUF
-
-# Launch OpenAI-compatible API server
-llama serve -hf ggml-org/Qwen3.5-0.8B-GGUF
+--reasoning-budget-enable
+--reasoning-budget 12288
+--reasoning-budget-soft-ratio 0.5
+--reasoning-budget-soft-message 'I have used about half of my thinking budget. Let me focus on the main line of reasoning and stop exploring side branches.'
+--reasoning-budget-soft2-ratio 0.75
+--reasoning-budget-soft2-message 'I have spent most of my thinking budget. I should stop exploring new approaches and converge on the final answer now.'
+--reasoning-budget-message 'Considering the limited time by the user, I have to give the solution based on the thinking directly now.\n</think>'
+--reasoning-budget-intro-mode once
+--reasoning-budget-grace-tokens 256
 ```
 
-<table align="center">
-    <tr>
-        <td align="center" width=50%>
-            <img width="1310" height="888" alt="VLM session with `llama cli`" src="https://github.com/user-attachments/assets/88726b48-1713-48aa-a525-95a02e78afc4" />
-            <i>VLM session with <b>llama cli</b></i>
-        </td>
-        <td align="center">
-            <img width="1392" height="958" alt="Built-in web UI against `llama serve` running Qwen 3.6" src="https://github.com/user-attachments/assets/b402f972-2e32-4def-8771-8d849f08cf2e" />
-            <i>Built-in web UI against <b>llama serve</b></i>
-        </td>
-    </tr>
-<table>
+Soft messages are injected in the model's own voice as forced tokens and are safe to use with speculative decoding. The hard cutoff waits for a paragraph boundary within the configured grace window. The hard message must include the model's closing tag when required by its template.
 
-## Description
+`--reasoning-budget-intro-mode once` suppresses the intro message when its decoded text already appears in the conversation prompt. The prompt scan skips multimodal `LLAMA_TOKEN_NULL` placeholders before detokenization.
 
-The main goal of `llama.cpp` is to enable LLM (and VLM) inference with minimal setup and state-of-the-art performance on
-a wide range of hardware - locally and in the cloud.
+OpenAI-compatible HTTP requests can set `reasoning_budget_enabled` explicitly. Omitting the field keeps the server or CLI default.
 
-- Plain C/C++ implementation without any dependencies
-- Apple silicon is a first-class citizen - optimized via ARM NEON, Accelerate and Metal frameworks
-- AVX, AVX2, AVX512 and AMX support for x86 architectures
-- RVV, ZVFH, ZFH, ZICBOP and ZIHINTPAUSE support for RISC-V architectures
-- 1.5-bit, 2-bit, 3-bit, 4-bit, 5-bit, 6-bit, and 8-bit integer quantization for faster inference and reduced memory use
-- Custom CUDA kernels for running LLMs on NVIDIA GPUs (support for AMD GPUs via HIP and Moore Threads GPUs via MUSA)
-- Vulkan and SYCL backend support
-- CPU+GPU hybrid inference to partially accelerate models larger than the total VRAM capacity
+### Reasoning-token telemetry
 
-The `llama.cpp` project is build on top of the [ggml](https://github.com/ggml-org/ggml) library.
+Responses report the reasoning-channel token count through `usage.reasoning` and `completion_tokens_details.reasoning_tokens` on OpenAI-compatible paths, and `output_tokens_details.reasoning_tokens` on the Anthropic-compatible path.
 
-## Fork notes
+## Validation
 
-This fork combines Nathanw1014's current Strix Halo Vulkan work with the
-reasoning-budget changes from the nudge fork. It is experimental and is not
-the upstream `ggml-org/llama.cpp` tree.
-
-The fork-specific changes include:
-
-- Reasoning-budget controls for the common library and `llama-server`,
-  including a master switch, multiple soft warning points, intro-once mode,
-  grace tokens, and `usage.reasoning` telemetry.
-- Explicit HTTP handling for the `reasoning_budget_enabled` master switch,
-  including distinct true, false, and omitted request values.
-- A multimodal safety fix that keeps `LLAMA_TOKEN_NULL` placeholders out of
-  intro-once detokenization.
-- Nathan's newer Vulkan and DeepSeek V4 sparse-prefill changes retained during
-  the rebase.
-
-Validation on 2026-08-20:
+The rebased fork was validated on 2026-08-20:
 
 - Vulkan build completed successfully.
 - `test-reasoning-budget` passed all 23 tests and UTF-8 checks.
-- `test-chat` passed, including the HTTP master-switch regression cases.
+- `test-chat` passed, including explicit true, explicit false, and omitted HTTP master-switch cases.
 - Ornith vision and Qwen3.8 Q6 vision smoke tests returned HTTP 200.
-- Qwen3.8 Q6 at 262K context passed 3/3 needle retrieval checks.
+- Qwen3.8 Q6 at 262K context passed all three needle retrieval checks.
 - Pi-bench `shift-calendar` passed with an automated grade of 91/100.
 
-The Qwen3.8 Q6 validation server used a 262144-token context, Vulkan flash
-attention, q8 KV cache, and MTP draft depth 3.
+The Qwen3.8 Q6 validation server used a 262144-token context, Vulkan flash attention, q8 KV cache, and MTP draft depth 3.
 
-## Supported backends
+## Build (Linux, Vulkan)
 
-| Backend | Target devices |
-| --- | --- |
-| [BLAS](docs/build.md#blas-build) | All |
-| [BLIS](docs/backend/BLIS.md) | All |
-| [CANN](docs/build.md#cann) | Ascend NPU |
-| [CUDA](docs/build.md#cuda) | Nvidia GPU |
-| [HIP](docs/build.md#hip) | AMD GPU |
-| [Hexagon [In Progress]](docs/backend/snapdragon/README.md) | Snapdragon |
-| [IBM zDNN](docs/backend/zDNN.md) | IBM Z & LinuxONE |
-| [MUSA](docs/build.md#musa) | Moore Threads GPU |
-| [Metal](docs/build.md#metal-build) | Apple Silicon |
-| [OpenCL](docs/backend/OPENCL.md) | Adreno GPU |
-| [OpenVINO [In Progress]](docs/backend/OPENVINO.md) | Intel CPUs, GPUs, and NPUs |
-| [RPC](https://github.com/ggml-org/llama.cpp/tree/master/tools/rpc) | All |
-| [SYCL](docs/backend/SYCL.md) | Intel GPU |
-| [VirtGPU](docs/backend/VirtGPU.md) | VirtGPU APIR |
-| [Vulkan](docs/build.md#vulkan) | GPU |
-| [WebGPU](docs/build.md#webgpu) | All |
-| [ZenDNN](docs/build.md#zendnn) | AMD CPU |
+```sh
+cmake -B build -DGGML_VULKAN=ON -DCMAKE_BUILD_TYPE=Release -DGGML_NATIVE=OFF -DLLAMA_BUILD_SERVER=ON -DLLAMA_BUILD_WEBUI=OFF
+cmake --build build -j "$(nproc)" --target llama-server
+LD_LIBRARY_PATH=build/bin ./build/bin/llama-server ...
+```
 
-## Documentation
+HIP builds work with the usual `-DGGML_HIP=ON -DAMDGPU_TARGETS=gfx1151` configuration.
 
-#### Tools
+Everything else is stock llama.cpp. See [README-upstream.md](README-upstream.md) for the upstream documentation. Unit tests for the budget sampler are available through the `test-reasoning-budget` target.
 
-- [cli](tools/cli/README.md)
-- [completion](tools/completion/README.md)
-- [server](tools/server/README.md)
-- [GBNF grammars](grammars/README.md)
+## License
 
-#### Development
-
-- [How to build](docs/build.md)
-- [Running on Docker](docs/docker.md)
-- [Build on Android](docs/android.md)
-- [Multi-GPU usage](docs/multi-gpu.md)
-- [Performance troubleshooting](docs/development/token_generation_performance_tips.md)
-- [GGML tips & tricks](https://github.com/ggml-org/llama.cpp/wiki/GGML-Tips-&-Tricks)
-- [XCFramework](docs/xcframework.md)
-- [Completions](docs/completions.md)
-- [Models](docs/models.md)
-- [Release process](docs/release.md)
-
-## Contributing
-
-- Contributors can open PRs
-- Collaborators will be invited based on contributions
-- Maintainers can push to branches in the `llama.cpp` repo and merge PRs into the `master` branch
-- Any help with managing issues, PRs and projects is very appreciated!
-- Read the [CONTRIBUTING.md](CONTRIBUTING.md) for more information
-
-## Acknowledgements
-
-- [yhirose/cpp-httplib](https://github.com/yhirose/cpp-httplib) - Single-header HTTP server, used by `llama-server` - MIT license
-- [stb-image](https://github.com/nothings/stb) - Single-header image format decoder, used by multimodal subsystem - Public domain
-- [nlohmann/json](https://github.com/nlohmann/json) - Single-header JSON library, used by various tools/examples - MIT License
-- [miniaudio.h](https://github.com/mackron/miniaudio) - Single-header audio format decoder, used by multimodal subsystem - Public domain
-- [subprocess.h](https://github.com/sheredom/subprocess.h) - Single-header process launching solution for C and C++ - Public domain
+MIT, as upstream. The upstream README and license are preserved in this repository.
